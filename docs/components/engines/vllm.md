@@ -116,13 +116,13 @@ The server certificate must cover the Pod IP used by IRO.
 
 ## Known engine issues
 
-Found with vllm#46370 (`384ba19`, then `fcfbd37`) on two setups: 4 H200 Pods of one rank each over InfiniBand
+Found with vllm#46370 (`384by19`, then `fcfbd37`) on two setups: 4 H200 Pods of one rank each over InfiniBand
 (DeepSeek-V2-Lite, `nixl_ep` from NIXL 1.3.2), and one Pod of 4 H100 ranks over NVLink (Qwen3-30B-A3B,
 NIXL 1.3.2 and 1.5.0).
 
 | Issue | What IRO does |
 |---|---|
 | With NIXL before 1.4, removing the highest rank succeeds, then the next step fails `x.size(1) == active_rank_bound * num_max_dispatch_tokens_per_rank` in `nixl_ep`. NIXL 1.5.0, which vLLM pins, removes it in place. For NIXL 1.3, `Etelis/vllm` branch `ft-nixl-ep-highest-rank` trims the expert output to the dispatched slots. | `Progress` fails the reconfig on the new fault and the group is reset |
-| A Pod that disappears (not just its processes) can wedge the survivors: their next step fails on a Gloo connection reset, but the `nixl_ep` fault of the step in flight is never raised, so the EngineCore never learns of it and blocks on the shared-memory broadcast with status `healthy`. Seen in 1 of 2 Pod deletions at `384ba19`, none of 11 at `fcfbd37`. | the plan waits; the diagnosis deadline resets the group |
+| A Pod that disappears (not just its processes) can wedge the survivors: their next step fails on a Gloo connection reset, but the `nixl_ep` fault of the step in flight is never raised, so the EngineCore never learns of it and blocks on the shared-memory broadcast with status `healthy`. Seen in 1 of 2 Pod deletions at `384by19`, none of 11 at `fcfbd37`. | the plan waits; the diagnosis deadline resets the group |
 | The DP coordinator (rank 0) dying goes unnoticed under load; the first request after an idle period faults the group | the probe wakes the idle rank, then a retry; a second one within `FlapWindow` resets the group |
 | NIXL 1.4 and later fail across Pods on nodes without GPU-initiated RDMA: `invalid memh` on unusable devices, then `lane not found` | none: the group does not start |
